@@ -9,12 +9,13 @@ Tree Watering Robot created to keep the Christmas tree wet without having to ref
 1.  Monitor tree water level
 2.  Monitor supply water level
 3.  Pump water when tree water is low
-4.  Give visual indication (via light on tree) that the pump is running
-5.  Give visual indication (via light on tree) that the supply is empty
-6.  Give visual indication (via light on tree) that there's a hardware fault
-7.  (Disabled) Only turn on tree sensors when periodic readings are taking place to avoid sensor degradation via electrolysis
-8.  Provide local debugging via OLED screen 
-9.  (TBD) Log data via MQTT (Wi-fi) to see if things are working
+4.  Only allow a maximum pump-on period per pumping session to avoid a HW or SW bug flooding the living room
+5.  Give visual indication (via light on tree) that the pump is running
+6.  Give visual indication (via light on tree) that the supply is empty
+7.  Give visual indication (via light on tree) that there's a hardware fault
+8.  (Disabled) Only turn on tree sensors when periodic readings are taking place to avoid sensor degradation via electrolysis
+9.  Provide local debugging via OLED screen 
+10.  (TBD) Log data via MQTT (Wi-fi) to see if things are working
 
 
 NOTE: The original intent was to excite the tree level sensors with a digital output pin of the controller, so that the "on" time would be minimized, thus prolonging the life of the sensor probes.  The sensor probes electrolyze the water and erode the contacts when they're energized... thus you should only turn them on for a brief period if you're only taking periodic readings.  Unfortunately, I didn't have any spare GPIO pins on the ESP that weren't also used for bootloader control, so I commented out this code.  I suppose the sensors will work fine for a few weeks during the holiday season :)
