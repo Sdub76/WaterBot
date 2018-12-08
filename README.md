@@ -2,6 +2,9 @@
 ESP8266-based Tree Water Monitor
 Tree Watering Robot created to keep the Christmas tree wet without having to refill it everyday.  
 
+https://youtu.be/NFjdOTcmyZQ
+
+
 ![Fritizing Image](/images/WaterBot.png)
 
 
@@ -19,8 +22,6 @@ Tree Watering Robot created to keep the Christmas tree wet without having to ref
 
 
 NOTE: The original intent was to excite the tree level sensors with a digital output pin of the controller, so that the "on" time would be minimized, thus prolonging the life of the sensor probes.  The sensor probes electrolyze the water and erode the contacts when they're energized... thus you should only turn them on for a brief period if you're only taking periodic readings.  Unfortunately, I didn't have any spare GPIO pins on the ESP that weren't also used for bootloader control, so I commented out this code.  I suppose the sensors will work fine for a few weeks during the holiday season :)
-
-https://youtu.be/NFjdOTcmyZQ
 
 ![Control Board](/images/control_board.jpg)
 ![Tree Simulation](/images/tree_simulation.jpg)
