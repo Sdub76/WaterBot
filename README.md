@@ -15,6 +15,8 @@ Tree Watering Robot created to keep the Christmas tree wet without having to ref
 7.  (Disabled) Only turn on tree sensors when periodic readings are taking place to avoid sensor degradation via electrolysis
 8.  Provide local debugging via OLED screen 
 9.  (TBD) Log data via MQTT (Wi-fi) to see if things are working
+
+
 NOTE: The original intent was to excite the tree level sensors with a digital output pin of the controller, so that the "on" time would be minimized, thus prolonging the life of the sensor probes.  The sensor probes electrolyze the water and erode the contacts when they're energized... thus you should only turn them on for a brief period of you're only taking periodic readings.  Unfortunately, I didn't have any spare GPIO pins on the ESP that weren't also used for bootloader control, so I commented out this code.  I suppose the sensors will work fine for a few weeks during the holiday season :)
 
 ![Control Board](/images/control_board.jpg)
