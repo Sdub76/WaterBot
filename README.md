@@ -2,7 +2,7 @@
 ESP8266-based Tree Water Monitor
 Tree Watering Robot created to keep the Christmas tree wet without having to refill it everyday.  
 
-https://youtu.be/NFjdOTcmyZQ
+[![](https://img.youtube.com/vi/NFjdOTcmyZQ/0.jpg)](https://youtu.be/NFjdOTcmyZQ "Click to Play in YouTube")
 
 
 ![Fritizing Image](/images/WaterBot.png)
