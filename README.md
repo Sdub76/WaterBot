@@ -21,15 +21,14 @@ NOTE: The original intent was to excite the tree level sensors with a digital ou
 ![Tree Simulation](/images/tree_simulation.jpg)
 
 ## Shopping List
-* 1	Adafruit Feather HUZZAH ESP8266	variant variant 1; part # Adafruit #2821
-* 1	Adafruit OLED FeatherWing	variant variant 1; part # Adafruit #2900
-* 2	FC-28 Soil Hygrometer Module	chip LM393; variant variant 3 (http://a.co/d/3ILjnXG)
-* 2	FC-28 Soil Hygrometer Module - Probe	variant variant 1 (http://a.co/d/3ILjnXG)
-* 1	Blue (430nm) LED
-* 1	2-Channel 5v Relay Shield	package relay-2ch5v10a
+* 1	Adafruit Feather HUZZAH ESP8266	part # [Adafruit #2821](https://www.adafruit.com/product/2821)
+* 1	Adafruit OLED FeatherWing	part # [Adafruit #2900](https://www.adafruit.com/product/2900)
+* 2	FC-28 Soil Hygrometer Module/Probe (http://a.co/d/3ILjnXG)
 * 1	12VDC Diaphram pump	(http://a.co/d/7KirTrF)
-* 1	Logic Level Converter	
-* 1	12VDC Power Supply(http://a.co/d/5liJUTH)
-* 1	1MΩ Resistor	package THT; resistance 1MΩ; pin spacing 400 mil; tolerance ±5%; bands 4
-* 1	390kΩ Resistor	package THT; resistance 390kΩ; pin spacing 400 mil; tolerance ±5%; bands 4
+* 1	Logic Level Converter	(https://www.microcenter.com/product/476364/velleman-33v-5v-ttl-logic-level-converter-module)
+* 1	2-Channel 5v Relay Module (http://a.co/d/bQ4BVRI)
+* 1	12VDC Power Supply (http://a.co/d/5liJUTH)
+* 1	Blue (430nm) LED
 * 1 220Ω Resitor for LED
+* 1	1MΩ Resistor for Analog input voltage divider
+* 1	390kΩ Resistor for Analog input voltage divider
