@@ -1,0 +1,46 @@
+RefDes,Quantity,Manufacturer,Function, Cost 
+C3,1, CAP400 10nF,Power decouple, $0.04 
+C4,1, CAP400 10nF,Power decouple, $0.04 
+C6,1, CAP400 100nF,Sensor decouple, $0.04 
+C7,1, CAP400 100nF,Sensor decouple, $0.04 
+C8,1, CAP400 100nF,Sensor decouple, $0.04 
+D1,1, LED Red,Power LED, $0.25 
+D2,1, LED Blue,Tree Switch LED, $0.25 
+D3,1, LED Blue,Tree Sensor LED1, $0.25 
+D4,1, LED Blue,Tree Sensor LED2, $0.25 
+D5,1, LED Blue,Tree Sensor LED3, $0.25 
+D6,1, LED Blue,Tree Sensor LED4, $0.25 
+D7,1, LED Blue,Supply Switch LED, $0.25 
+J1,1, HDR-1x6 ,Pro mini FTDI opt.,
+J2,1,Molex 395021006,SPI LED out, $1.40 
+J3,1,Molex 395021002 ,Lamp conn, $0.58 
+J4,1, HDR-1x3 ,Lamp relay out opt.,
+J5,1, HDR-1x3 ,Pump relay out opt.,
+J6,1,Molex 395021002 ,Pump conn, $0.58 
+J7,1,Molex 395021003 ,Supply switch in, $0.78 
+J8,1,CUI PJ-002A ,12V barrel jack, $0.70 
+J9,1,Molex 395021003 ,Tree Sensor in, $0.78 
+J10,1,Molex 395021002 ,12V in opt., $0.58 
+J11,1,Molex 395021003 ,Tree Switch in, $0.78 
+J12,1, HDR-1x4 ,Relay control opt.,
+M1,1, ARDUINO-PRO-MINI-5.0V,Control CPU, $9.95 
+MS1,1,Adafruit featherwing ESP8266,Monitoring CPU, $19.95 
+R1,1, RES400 (220 Ohm),5V Power LED Res, $0.10 
+R2,1, RES400 (220 Ohm),Tree Switch LED Res, $0.10 
+R3,1, RES400 (220 Ohm),Tree Sensor LED1 Res, $0.10 
+R4,1, RES400 (220 Ohm),Tree Sensor LED2, $0.10 
+R5,1, RES400 (220 Ohm),Tree Sensor LED3, $0.10 
+R6,1, RES400 (220 Ohm),Tree Sensor LED4, $0.10 
+R10,1, RES400 (220 Ohm),Supply Switch LED, $0.10 
+U1,1,2SRD Relay Module,Mechanical relays, $1.86 
+U2,1,LM3940,5->3.3V regulator, $1.63 
+U3,1,4ch i2c logic level module,5<->3.3V level conv, $2.95 
+U4,1, 78SRinv_horiz,12->5V regulator, $4.30 
+,1,WaterBot 2.0 PCB,PCB, $1.88 
+,1,12V Diaphram Pump,Water pump, $7.68 
+,1,Water level sensor (IR),Tree level sensor, $7.67 
+,1,Water level switch (IR),Tree level switch, $2.60 
+,1,Water level switch (IR),Water supply switch, $2.60 
+,1,Adafruit featherwing OLED,, $14.95 
+,1,12VDC power supply,, $10.98 
+,37,,, $97.82 
