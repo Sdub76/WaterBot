@@ -3,6 +3,7 @@
  * Version 2.0 of Tree Watering Robot
  */
 #include <FreqMeasure.h>
+#include "TimedBlink.h"
 
 //PIN DEFINITIONS
 #define PIN_SERIAL_TX      0
@@ -27,20 +28,58 @@
 #define PIN_PUMP          15
 #define PIN_LAMP          16
 
+//Sensor characteristics (Hz)
 #define WATER_LEVEL_0 20
 #define WATER_LEVEL_1 50
 #define WATER_LEVEL_2 100
 #define WATER_LEVEL_3 200
 #define WATER_LEVEL_4 400
 
+//States
+#define SENSOR_WET   0
+#define SENSOR_DRY   1
+#define SENSOR_ERROR 2
+#define PUMP_OFF 0
+#define PUMP_ON  1
+#define PUMP_ERR 2
+
+//Other parameters
+#define AVERAGE_LENGTH 30  // Number of points to average for frequnecy calc
+#define PUMP_MAXTIME   10 // Number of seconds to allow pump to run
+
+double sum = 0;
+int count = 0;
+double frequency = 0;
+unsigned long prev_time_freq = 0;
+
+unsigned long TreeLevel = 0;
+boolean TreeSwitch = 0;
+boolean TreeState = 0;
+
+boolean SupplySwitch = 0;
+boolean SupplyState = 0;
+
+boolean PumpState = 0;
+double PumpStart = 0;
+
+unsigned long current_time = 0;
+unsigned long freq_prev_time = 0;
+double timeout = 0;
+
+TimedBlink level1_led(PIN_LEVEL1_LED);
+TimedBlink level2_led(PIN_LEVEL2_LED);
+TimedBlink level3_led(PIN_LEVEL3_LED);
+TimedBlink level4_led(PIN_LEVEL4_LED);
 
 void setup() {
-  Serial.begin(57600);
-  FreqMeasure.begin();
+
+  //Serial.begin(57600);
+  
   // Intialize Inputs
   pinMode(PIN_TREE_SENSOR,INPUT);
   pinMode(PIN_LEVEL_SENSOR,INPUT);
   pinMode(PIN_SUPPLY_SENSOR,INPUT);
+
   // Intialize Outputs
   pinMode(PIN_TREE_LED,OUTPUT);
   pinMode(PIN_LEVEL1_LED,OUTPUT);
@@ -50,90 +89,161 @@ void setup() {
   pinMode(PIN_SUPPLY_LED,OUTPUT);
   pinMode(PIN_PUMP,OUTPUT);
   pinMode(PIN_LAMP,OUTPUT);
-}
+  level1_led.blink(50,50);
+  level2_led.blink(50,50);
+  level3_led.blink(50,50);
+  level4_led.blink(50,50);
 
-double sum=0;
-int count=0;
-boolean toggle = 0;
-float frequency = 0;
+  FreqMeasure.begin();
+
+  timeout = AVERAGE_LENGTH/(WATER_LEVEL_0*0.9);
+
+}
 
 
 void loop() {
 
+  current_time = millis();
+
+  ReadInputs();
+
+  UpdateStates();
+
+  WriteOutputs();
   
+}
+
+
+void ReadInputs() {
+  //Read Sensors
+  
+  SupplySwitch = digitalRead(PIN_SUPPLY_SENSOR);
+
+  TreeSwitch = digitalRead(PIN_TREE_SENSOR);
+
   if (FreqMeasure.available()) {
     // average several reading together
     sum = sum + FreqMeasure.read();
     count = count + 1;
-    if (count > 30) {
-      frequency = FreqMeasure.countToFrequency(sum / count);
+    if (count > AVERAGE_LENGTH) {
+      // Reset timer
+      freq_prev_time = current_time;
+      double frequency = FreqMeasure.countToFrequency(sum / count);
       Serial.println(frequency);
       sum = 0;
       count = 0;
-      toggle = !toggle;
+      TreeLevel = 0;
+      if (frequency > (WATER_LEVEL_0*0.9)) TreeLevel++;
+      if (frequency > (WATER_LEVEL_1*0.9)) TreeLevel++;
+      if (frequency > (WATER_LEVEL_2*0.9)) TreeLevel++;
+      if (frequency > (WATER_LEVEL_3*0.9)) TreeLevel++;
+      if (frequency > (WATER_LEVEL_4*0.9)) TreeLevel++;
     }
-    digitalWrite(LED_BUILTIN,toggle);
-    if (frequency > (WATER_LEVEL_1*0.9)){
-      digitalWrite(LED_LEVEL1,true);
+  }
+  if ((current_time - freq_prev_time) > timeout) {
+     TreeLevel = 0;
+  }
+
+
+}
+
+void UpdateStates() {
+  //Update States
+  
+  if (SupplySwitch == 0) {
+    SupplyState = SENSOR_WET; // Switch = Wet
+  } else {
+    SupplyState = SENSOR_DRY;
+  }
+
+  if (TreeLevel == 0) {
+    TreeState = SENSOR_ERROR; // Sensor Timeout
+  } else if (TreeSwitch == 0) {
+    TreeState = SENSOR_WET; // Switch = Wet
+  } else if (TreeSwitch < 5) {
+    TreeState = SENSOR_DRY; // Switch Dry & Sensor Dry
+  } else {
+    TreeState = SENSOR_ERROR; // Sensor Wet & Switch Dry conflict
+  }
+  
+  switch (PumpState) {
+    case PUMP_OFF :
+      if ((TreeState == SENSOR_DRY) && (SupplyState == SENSOR_WET)) {
+        PumpStart = current_time; // Record pumping start time
+        PumpState = PUMP_ON;
+      }
+      break;
+    
+    case PUMP_ON :
+      // If TreeState or Supply State change, stop pumping
+      if ((TreeState != SENSOR_DRY) && (SupplyState != SENSOR_WET)) {
+        PumpState = PUMP_OFF;
+      }
       
-    } else {
-      digitalWrite(LED_LEVEL1,false);
-    }
-    if (frequency > (WATER_LEVEL_2*0.9)){
-      digitalWrite(LED_LEVEL2,true);
-    } else {
-      digitalWrite(LED_LEVEL2,false);
-    }
-    if (frequency > (WATER_LEVEL_3*0.9)){
-      digitalWrite(LED_LEVEL3,true);
-    } else {
-      digitalWrite(LED_LEVEL3,false);
-    }
-    if (frequency > (WATER_LEVEL_4*0.9)){
-      digitalWrite(LED_LEVEL4,true);
-    } else {
-      digitalWrite(LED_LEVEL4,false);
-    }
+      if ((current_time - PumpStart) > PUMP_MAXTIME*1000) {
+        PumpState = PUMP_OFF;
+      }
+      break;
   }
 }
 
-void ReadSensors() {
+void WriteOutputs() {
+  // Update Pump output
+  if (PumpState) {
+    digitalWrite(PIN_PUMP,true);
+  } else {
+    digitalWrite(PIN_PUMP,false);
+  }
   
-  SupplyState = digitalRead(SUPPLY_LEVEL);
-  TreeState_raw = digitalRead(TREE_LEVEL);
-  TreeLevel_raw = analogRead(TREE_LEVEL_A);
+  // Update LEDs
+  if (SupplySwitch) {
+    digitalWrite(PIN_SUPPLY_LED,true);
+  } else {
+    digitalWrite(PIN_SUPPLY_LED,false);
+  }
   
-  switch (TreeState) {
-    case SENSOR_DRY :
-      if (TreeState_raw == SENSOR_WET) {
-        // If transitioning from "dry" to "wet", add pump on-time to total watering time
-        WaterTime = WaterTime + (float)(PumpTime)/1000.0;
-        // Set flag to reinitialize pump timer
-        NewPumpSession = true;
-        TreeState = SENSOR_WET;
-      }
-      // Invalidate Tree Level State if raw value > threshold
-      if (TreeLevel_raw > SENS_RAW_ERR) {
-        // If transitioning from "dry" to "error", add pump on-time to total watering time
-        WaterTime = WaterTime + (float)PumpTime/1000.0;
-        // Set flag to reinitialize pump timer
-        NewPumpSession = true;
-        TreeState = SENSOR_ERROR;
-      }
+  if (TreeSwitch) {
+    digitalWrite(PIN_TREE_LED,true);
+  } else {
+    digitalWrite(PIN_TREE_LED,false);
+  }
+  
+  switch (TreeLevel) {
+    case 0:
+      level1_led.blink();
+      level2_led.blink();
+      level3_led.blink();
+      level4_led.blink();
       break;
-    case SENSOR_WET :
-      TreeState = SENSOR_WET;
-      if (TreeState_raw == SENSOR_DRY) {
-        TreeState = SENSOR_DRY;
-      }
-      // Invalidate Tree Level State if raw value > threshold
-      if (TreeLevel_raw > SENS_RAW_ERR) {
-        TreeState = SENSOR_ERROR;
-      }
+    case 1:
+      level1_led.off();
+      level2_led.off();
+      level3_led.off();
+      level4_led.off();
       break;
-    case SENSOR_ERROR :
-      TreeState = SENSOR_WET;
+    case 2:
+      level1_led.off();
+      level2_led.off();
+      level3_led.off();
+      level4_led.on();
+      break;
+    case 3:
+      level1_led.off();
+      level2_led.off();
+      level3_led.on();
+      level4_led.on();
+      break;
+    case 4:
+      level1_led.off();
+      level2_led.on();
+      level3_led.on();
+      level4_led.on();
+      break;
+    case 5:
+      level1_led.on();
+      level2_led.on();
+      level3_led.on();
+      level4_led.on();
       break;
   }
 }
-  
