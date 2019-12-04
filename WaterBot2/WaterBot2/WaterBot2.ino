@@ -154,7 +154,7 @@ void UpdateStates() {
   //Update States
   
   if (SupplySwitch == 0) {
-    SupplyState = SENSOR_WET; // Switch = Wet
+    SupplyState = SENSOR_WET; // Low = Wet
   } else {
     SupplyState = SENSOR_DRY;
   }
@@ -162,7 +162,7 @@ void UpdateStates() {
   if (TreeLevel == 0) {
     TreeState = SENSOR_ERROR; // Sensor Timeout
   } else if (TreeSwitch == 0) {
-    TreeState = SENSOR_WET; // Switch = Wet
+    TreeState = SENSOR_WET; // Low = Wet
   } else if (TreeSwitch < 5) {
     TreeState = SENSOR_DRY; // Switch Dry & Sensor Dry
   } else {
