@@ -1,6 +1,8 @@
 /* WaterBot2
  *
  * Version 2.0 of Tree Watering Robot
+ * ToDo: Add SPI display commands
+ *       Add RX/TX to ESP8266
  */
 #include <FreqMeasure.h>
 #include "TimedBlink.h"
@@ -70,6 +72,7 @@ TimedBlink level1_led(PIN_LEVEL1_LED);
 TimedBlink level2_led(PIN_LEVEL2_LED);
 TimedBlink level3_led(PIN_LEVEL3_LED);
 TimedBlink level4_led(PIN_LEVEL4_LED);
+TimedBlink status_lamp(PIN_LAMP);
 
 void setup() {
 
@@ -93,7 +96,7 @@ void setup() {
   level2_led.blink(50,50);
   level3_led.blink(50,50);
   level4_led.blink(50,50);
-
+  
   FreqMeasure.begin();
 
   timeout = AVERAGE_LENGTH/(WATER_LEVEL_0*0.9);
@@ -189,20 +192,35 @@ void UpdateStates() {
 
 void WriteOutputs() {
   // Update Pump output
-  if (PumpState) {
+  if (PumpState == PUMP_ON) {
     digitalWrite(PIN_PUMP,true);
   } else {
     digitalWrite(PIN_PUMP,false);
   }
+
+  // Update remote status lamp (in order of importance)
+  // Fast Blink = Sensor Error (Either Level=0Hz or Switch Dry while Level OK)
+  // Fast Blip = Supply Empty
+  // Slow Blink = Pump On
+  // On = Standby
+  if (TreeState == SENSOR_ERROR) {
+    status_lamp.blink(50,50); 
+  } else if (SupplyState == SENSOR_DRY) {
+    status_lamp.blink(50,2000);
+  } else if (PumpState == PUMP_ON) {
+    status_lamp.blink(1000,1000);
+  } else {
+    status_lamp.on();
+  }
   
   // Update LEDs
-  if (SupplySwitch) {
+  if (SupplySwitch == SENSOR_WET) {
     digitalWrite(PIN_SUPPLY_LED,true);
   } else {
     digitalWrite(PIN_SUPPLY_LED,false);
   }
   
-  if (TreeSwitch) {
+  if (TreeSwitch == SENSOR_WET) {
     digitalWrite(PIN_TREE_LED,true);
   } else {
     digitalWrite(PIN_TREE_LED,false);
@@ -246,4 +264,5 @@ void WriteOutputs() {
       level4_led.on();
       break;
   }
+
 }
