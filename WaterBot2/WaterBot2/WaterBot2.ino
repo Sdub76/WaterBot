@@ -1,8 +1,27 @@
 /* WaterBot2
  *
  * Version 2.0 of Tree Watering Robot
- * ToDo: Add SPI display commands
- *       Add RX/TX to ESP8266
+ *       
+ * Tree watering system
+ * 
+ * Place supply switch at bottom of water tank
+ * Place Tree switch at level you wwant watering to begin
+ * Place Tree level sensor in stand's float hole
+ * 
+ * If tree switch is higher than level sernsor, error will be reported
+ * If tree switch is lower than level sensor, pump won't run until both are satisfied,
+ *    but risk of pump timing out of it runs too long, since water level is very low.  
+ *    Care must be taken to not allow water level to get undesirably low.
+ *    
+ * LCD displays and ESP8266 are optional
+ * 
+ * Water Level Sensor
+ * https://www.amazon.com/gp/product/B07BFPP4TQ/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&psc=1
+ * Water Switch
+ * https://www.amazon.com/gp/product/B0811GRVJH/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&psc=1
+ * Water Pump
+ * https://www.amazon.com/gp/product/B0744FWNFR/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1
+ * 
  */
 #include <FreqMeasure.h>
 #include "TimedBlink.h"
@@ -38,35 +57,36 @@
 #define WATER_LEVEL_4 400
 
 //States
+boolean SupplyState = 0;
+boolean TreeState = 0;
 #define SENSOR_WET   0
 #define SENSOR_DRY   1
-#define SENSOR_ERROR 2
+#define SENSOR_ERR 2
+
+boolean PumpState = 0;
 #define PUMP_OFF 0
 #define PUMP_ON  1
 #define PUMP_ERR 2
 
 //Other parameters
 #define AVERAGE_LENGTH 30  // Number of points to average for frequnecy calc
-#define PUMP_MAXTIME   10 // Number of seconds to allow pump to run
+#define PUMP_MAXTIME   10  // Number of seconds to allow pump to run
 
 double sum = 0;
 int count = 0;
 double frequency = 0;
 unsigned long prev_time_freq = 0;
 
-unsigned long TreeLevel = 0;
-boolean TreeSwitch = 0;
-boolean TreeState = 0;
-
+//Inputs
 boolean SupplySwitch = 0;
-boolean SupplyState = 0;
+boolean TreeSwitch = 0;
+unsigned long TreeLevel = 0;
 
-boolean PumpState = 0;
-double PumpStart = 0;
-
+// TIming state vars
 unsigned long current_time = 0;
 unsigned long freq_prev_time = 0;
 double timeout = 0;
+double PumpStart = 0;
 
 TimedBlink level1_led(PIN_LEVEL1_LED);
 TimedBlink level2_led(PIN_LEVEL2_LED);
@@ -113,6 +133,10 @@ void loop() {
   UpdateStates();
 
   WriteOutputs();
+
+  UpdateDisplays();
+  
+  LogData();
   
 }
 
@@ -159,16 +183,19 @@ void UpdateStates() {
     SupplyState = SENSOR_DRY;
   }
 
-  if (TreeLevel == 0) {
-    TreeState = SENSOR_ERROR; // Sensor Timeout
-  } else if (TreeSwitch == 0) {
-    TreeState = SENSOR_WET; // Low = Wet
-  } else if (TreeSwitch < 5) {
-    TreeState = SENSOR_DRY; // Switch Dry & Sensor Dry
+  // Fuse TreeSwitch and TreeLevel into TreeState
+  // ToDo: Add hysteresis
+  if (TreeLevel == 0) {         // Sensor Timeout
+    TreeState = SENSOR_ERR; 
+  } else if (TreeSwitch == 0) { // Low = Wet (regardless of level sensor)
+    TreeState = SENSOR_WET; 
+  } else if (TreeSwitch < 5) {  // Sensor Less than full and Switch = Dry
+    TreeState = SENSOR_DRY; 
   } else {
-    TreeState = SENSOR_ERROR; // Sensor Wet & Switch Dry conflict
+    TreeState = SENSOR_ERR;   // Sensor Full & Switch Dry conflict -- Bad switch placement?
   }
   
+  // Fuse TreeState and SwitchState into PumpState
   switch (PumpState) {
     case PUMP_OFF :
       if ((TreeState == SENSOR_DRY) && (SupplyState == SENSOR_WET)) {
@@ -184,9 +211,14 @@ void UpdateStates() {
       }
       
       if ((current_time - PumpStart) > PUMP_MAXTIME*1000) {
-        PumpState = PUMP_OFF;
+        PumpState = PUMP_ERR;
       }
       break;
+
+    case PUMP_ERR :
+      // Do nothing until power cycle
+      // Todo: Add auto-reset sequence? Allow pumping as long as positive level progress being made?
+    break;
   }
 }
 
@@ -200,11 +232,14 @@ void WriteOutputs() {
 
   // Update remote status lamp (in order of importance)
   // Fast Blink = Sensor Error (Either Level=0Hz or Switch Dry while Level OK)
-  // Fast Blip = Supply Empty
+  // Off Blip = Pump Lockout (Pump ran too long)
+  // On Blip = Supply Empty
   // Slow Blink = Pump On
   // On = Standby
-  if (TreeState == SENSOR_ERROR) {
+  if (TreeState == SENSOR_ERR) {
     status_lamp.blink(50,50); 
+  } else if (PumpState == PUMP_ERR) {
+    status_lamp.blink(2000,50);
   } else if (SupplyState == SENSOR_DRY) {
     status_lamp.blink(50,2000);
   } else if (PumpState == PUMP_ON) {
@@ -265,4 +300,13 @@ void WriteOutputs() {
       break;
   }
 
+}
+
+void UpdateDisplays() {
+  //ToDo: Drive I2C display directly -OR- Send to ESP8266 via UART
+  //ToDo: Send SPI LCD commands (Alternative to lamp... 2020 enhancement)
+}
+
+void LogData() {
+  //ToDo: Send data to ESP8266 for MQTDD logging (2020 enhancement)
 }
