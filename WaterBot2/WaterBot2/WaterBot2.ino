@@ -22,6 +22,8 @@
  * Water Pump
  * https://www.amazon.com/gp/product/B0744FWNFR/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1
  * 
+ * Issues: Pump needs flyback diods
+ * 
  */
 #include <FreqMeasure.h>
 #include "TimedBlink.h"
@@ -35,15 +37,15 @@
 #define PIN_SPI_SCK       13
 #define PIN_SPI_SS        17
 
-#define PIN_TREE_SENSOR    7
+#define PIN_TREE_SENSOR   14
 #define PIN_LEVEL_SENSOR   8
-#define PIN_SUPPLY_SENSOR 14
+#define PIN_SUPPLY_SENSOR  7
 
 #define PIN_TREE_LED       2
-#define PIN_LEVEL1_LED     3
-#define PIN_LEVEL2_LED     4 
-#define PIN_LEVEL3_LED     5
-#define PIN_LEVEL4_LED     6
+#define PIN_LEVEL1_LED     6
+#define PIN_LEVEL2_LED     5 
+#define PIN_LEVEL3_LED     4
+#define PIN_LEVEL4_LED     3
 #define PIN_SUPPLY_LED     9
 
 #define PIN_PUMP          15
@@ -57,13 +59,13 @@
 #define WATER_LEVEL_4 400
 
 //States
-boolean SupplyState = 0;
-boolean TreeState = 0;
-#define SENSOR_WET   0
-#define SENSOR_DRY   1
+int     SupplyState = 0;
+int     TreeState = 0;
+#define SENSOR_WET 0
+#define SENSOR_DRY 1
 #define SENSOR_ERR 2
 
-boolean PumpState = 0;
+int     PumpState = 0;
 #define PUMP_OFF 0
 #define PUMP_ON  1
 #define PUMP_ERR 2
@@ -76,15 +78,15 @@ double sum = 0;
 int count = 0;
 double frequency = 0;
 unsigned long prev_time_freq = 0;
+unsigned long prev_time_ser = 0;
 
 //Inputs
-boolean SupplySwitch = 0;
-boolean TreeSwitch = 0;
+int SupplySwitch = 0;
+int TreeSwitch = 0;
 unsigned long TreeLevel = 0;
 
 // TIming state vars
 unsigned long current_time = 0;
-unsigned long freq_prev_time = 0;
 double timeout = 0;
 double PumpStart = 0;
 
@@ -96,12 +98,13 @@ TimedBlink status_lamp(PIN_LAMP);
 
 void setup() {
 
-  //Serial.begin(57600);
-  
+  Serial.begin(57600);
+  Serial.println("Serial Initialized");
+
   // Intialize Inputs
   pinMode(PIN_TREE_SENSOR,INPUT);
   pinMode(PIN_LEVEL_SENSOR,INPUT);
-  pinMode(PIN_SUPPLY_SENSOR,INPUT);
+  pinMode(PIN_SUPPLY_SENSOR,INPUT_PULLUP);
 
   // Intialize Outputs
   pinMode(PIN_TREE_LED,OUTPUT);
@@ -137,7 +140,13 @@ void loop() {
   UpdateDisplays();
   
   LogData();
-  
+
+  if ((current_time - prev_time_ser) > 2000) {
+
+    DebugOutputs();
+    prev_time_ser = current_time;
+  }
+
 }
 
 
@@ -145,7 +154,7 @@ void ReadInputs() {
   //Read Sensors
   
   SupplySwitch = digitalRead(PIN_SUPPLY_SENSOR);
-
+  
   TreeSwitch = digitalRead(PIN_TREE_SENSOR);
 
   if (FreqMeasure.available()) {
@@ -154,9 +163,8 @@ void ReadInputs() {
     count = count + 1;
     if (count > AVERAGE_LENGTH) {
       // Reset timer
-      freq_prev_time = current_time;
-      double frequency = FreqMeasure.countToFrequency(sum / count);
-      Serial.println(frequency);
+      prev_time_freq = current_time;
+      frequency = FreqMeasure.countToFrequency(sum / count);
       sum = 0;
       count = 0;
       TreeLevel = 0;
@@ -167,10 +175,10 @@ void ReadInputs() {
       if (frequency > (WATER_LEVEL_4*0.9)) TreeLevel++;
     }
   }
-  if ((current_time - freq_prev_time) > timeout) {
-     TreeLevel = 0;
-  }
-
+//  if ((current_time - prev_time_freq) > timeout) {
+//     TreeLevel = 0;
+//     Serial.println("timeout");
+//  }
 
 }
 
@@ -189,12 +197,11 @@ void UpdateStates() {
     TreeState = SENSOR_ERR; 
   } else if (TreeSwitch == 0) { // Low = Wet (regardless of level sensor)
     TreeState = SENSOR_WET; 
-  } else if (TreeSwitch < 5) {  // Sensor Less than full and Switch = Dry
+  } else if (TreeLevel < 5) {  // Sensor Less than full and Switch = Dry
     TreeState = SENSOR_DRY; 
   } else {
     TreeState = SENSOR_ERR;   // Sensor Full & Switch Dry conflict -- Bad switch placement?
   }
-  
   // Fuse TreeState and SwitchState into PumpState
   switch (PumpState) {
     case PUMP_OFF :
@@ -206,7 +213,7 @@ void UpdateStates() {
     
     case PUMP_ON :
       // If TreeState or Supply State change, stop pumping
-      if ((TreeState != SENSOR_DRY) && (SupplyState != SENSOR_WET)) {
+      if ((TreeState != SENSOR_DRY) || (SupplyState != SENSOR_WET)) {
         PumpState = PUMP_OFF;
       }
       
@@ -225,15 +232,17 @@ void UpdateStates() {
 void WriteOutputs() {
   // Update Pump output
   if (PumpState == PUMP_ON) {
-    digitalWrite(PIN_PUMP,true);
-  } else {
     digitalWrite(PIN_PUMP,false);
+  } else {
+    digitalWrite(PIN_PUMP,true);
   }
 
   // Update remote status lamp (in order of importance)
+  // Note relay is active low, so "on" is really "off" in the blink routine
+  //
   // Fast Blink = Sensor Error (Either Level=0Hz or Switch Dry while Level OK)
-  // Off Blip = Pump Lockout (Pump ran too long)
-  // On Blip = Supply Empty
+  // On Blip = Pump Lockout (Pump ran too long)
+  // Off Blip = Supply Empty
   // Slow Blink = Pump On
   // On = Standby
   if (TreeState == SENSOR_ERR) {
@@ -309,4 +318,91 @@ void UpdateDisplays() {
 
 void LogData() {
   //ToDo: Send data to ESP8266 for MQTDD logging (2020 enhancement)
+}
+
+void DebugOutputs() {
+
+  Serial.println("==INPUTS==");
+  Serial.print(" SupplySwitch = ");
+  switch (SupplySwitch) {
+    case SENSOR_WET : 
+    Serial.println("WET");
+    break;
+
+    case SENSOR_DRY : 
+    Serial.println("DRY");
+    break;
+    
+    case SENSOR_ERR : 
+    Serial.println("ERROR");
+    break;
+  }
+  Serial.print(" TreeSwitch = ");
+  switch (TreeSwitch) {
+   case SENSOR_WET : 
+    Serial.println("WET");
+    break;
+
+    case SENSOR_DRY : 
+    Serial.println("DRY");
+    break;
+    
+    case SENSOR_ERR : 
+    Serial.println("ERROR");
+    break;
+  }
+  Serial.print(" TreeLevel = ");
+  Serial.print(TreeLevel);
+  Serial.print(" (");
+  Serial.print(frequency);
+  Serial.println("Hz)");
+
+  Serial.println("==STATES==");
+  Serial.print(" SupplyState = ");
+  switch (SupplyState) {
+    case SENSOR_WET : 
+    Serial.println("WET");
+    break;
+
+    case SENSOR_DRY : 
+    Serial.println("DRY");
+    break;
+    
+    case SENSOR_ERR : 
+    Serial.println("ERROR");
+    break;
+  }
+  Serial.print(" TreeState = ");
+  switch (TreeState) {
+    case SENSOR_WET : 
+    Serial.println("WET");
+    break;
+
+    case SENSOR_DRY : 
+    Serial.println("DRY");
+    break;
+    
+    case SENSOR_ERR : 
+    Serial.println("ERROR");
+    break;
+  }
+  Serial.print(" PumpState = ");
+  switch (PumpState) {
+    case PUMP_OFF : 
+    Serial.println("OFF");
+    break;
+
+    case PUMP_ON : 
+    Serial.print("ON (");
+    Serial.print((current_time-PumpStart)/1000);
+    Serial.println("s)");
+    break;
+    
+    case PUMP_ERR : 
+    Serial.println("ERROR");
+    break;
+  }
+  
+  Serial.println("");
+  
 }
