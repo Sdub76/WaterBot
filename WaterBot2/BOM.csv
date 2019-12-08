@@ -1,6 +1,6 @@
 RefDes,Quantity,Manufacturer,Function, Cost 
-C3,1, CAP400 10nF,Power decouple, $0.04 
-C4,1, CAP400 10nF,Power decouple, $0.04 
+C3,1, CAP400 10uF,Power decouple, $0.04 
+C4,1, CAP400 10uF,Power decouple, $0.04 
 C6,1, CAP400 100nF,Sensor decouple, $0.04 
 C7,1, CAP400 100nF,Sensor decouple, $0.04 
 C8,1, CAP400 100nF,Sensor decouple, $0.04 
