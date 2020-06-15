@@ -22,11 +22,13 @@
  * Water Pump
  * https://www.amazon.com/gp/product/B0744FWNFR/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1
  * 
- * Issues: Pump needs flyback diods
+ * Issues: Pump needs flyback diodes
  * 
  */
 #include <FreqMeasure.h>
 #include "TimedBlink.h"
+
+
 
 //PIN DEFINITIONS
 #define PIN_SERIAL_TX      0
